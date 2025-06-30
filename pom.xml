@@ -12,13 +12,14 @@
     <modules>
         <module>apps/auth-service</module>
         <module>apps/users-service</module>
-        <module>apps/votos-service</module>
-        <module>apps/reportes-service</module>
+        <module>apps/votes-service</module>
+        <module>apps/reports-service</module>
 
         <!-- módulos para libs compartidas -->
-        <module>libs/commons</module>
-        <module>libs/security</module>
-        <module>libs/dto</module>
+        <!-- Elimina o comenta los siguientes si no existen -->
+        <!-- <module>libs/commons</module> -->
+        <!-- <module>libs/security</module> -->
+        <!-- <module>libs/dto</module> -->
     </modules>
 
     <properties>

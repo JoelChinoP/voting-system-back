@@ -6,7 +6,7 @@
 		<groupId>com</groupId>
 		<artifactId>system-voting-parent</artifactId>
 		<version>1.0.0</version>
-		<!-- <relativePath/> lookup parent from repository -->
+		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<groupId>com</groupId>
 	<artifactId>auth</artifactId>
@@ -129,6 +129,7 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<version>3.5.3</version>
 				<configuration>
 					<excludes>
 						<exclude>

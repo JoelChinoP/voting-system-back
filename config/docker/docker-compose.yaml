@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # PostgreSQL - Para estado de usuarios
+  postgres:
+    image: postgres:15-alpine
+    container_name: voting-postgres
+    environment:
+      POSTGRES_DB: voting_system
+      POSTGRES_USER: voting_user
+      POSTGRES_PASSWORD: dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/db/postgres/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./scripts/db/postgres/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U voting_user -d voting_system"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Cassandra - Para almacenar votos
+  cassandra:
+    image: cassandra:4.1
+    container_name: voting-cassandra
+    environment:
+      CASSANDRA_CLUSTER_NAME: voting_cluster
+      CASSANDRA_DC: datacenter1
+      CASSANDRA_RACK: rack1
+      CASSANDRA_ENDPOINT_SNITCH: GossipingPropertyFileSnitch
+    ports:
+      - "9042:9042"
+    volumes:
+      - cassandra_data:/var/lib/cassandra
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  # Cassandra Init - Para ejecutar scripts CQL
+  cassandra-init:
+    image: cassandra:4.1
+    container_name: cassandra-init
+    depends_on:
+      cassandra:
+        condition: service_healthy
+    volumes:
+      - ./scripts/db/cassandra/init.cql:/init.cql
+    command: >
+      bash -c "
+        echo 'Waiting for Cassandra to be ready...'
+        until cqlsh cassandra -f /init.cql; do
+          echo 'Cassandra is not ready yet, retrying in 10 seconds...'
+          sleep 10
+        done
+        echo 'Cassandra initialized successfully!'
+      "
+
+volumes:
+  postgres_data:
+  cassandra_data:
+
+networks:
+  default:
+    name: voting-network

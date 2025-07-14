@@ -30,6 +30,8 @@ public class AuthService {
         }
         User u = new User();
         u.setUsername(req.getUsername());
+        u.setEmail(req.getUsername()); // El username es el email
+        u.setFullName(req.getFullName());
         u.setPassword(passwordEncoder.encode(req.getPassword()));
         userRepository.save(u);
     }

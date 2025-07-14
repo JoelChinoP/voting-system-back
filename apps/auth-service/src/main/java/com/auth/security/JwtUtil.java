@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Component
@@ -23,13 +24,17 @@ public class JwtUtil {
     }
 
     public String generateToken(UserDetails userDetails) {
+        // Obtener el userId del UserDetails (asumiendo que es un User)
+        String userId = ((com.auth.model.User) userDetails).getId().toString();
+        
         String roles = userDetails.getAuthorities()
             .stream()
             .map(auth -> auth.getAuthority())
             .collect(Collectors.joining(","));
 
         return Jwts.builder()
-            .setSubject(userDetails.getUsername())
+            .setSubject(userId)  // userId como subject para compatibilidad con votes-service
+            .claim("username", userDetails.getUsername())
             .claim("roles", roles)
             .setIssuedAt(new Date())
             .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
@@ -43,7 +48,17 @@ public class JwtUtil {
             .build()
             .parseClaimsJws(token)
             .getBody()
+            .get("username", String.class);
+    }
+
+    public UUID extractUserId(String token) {
+        String userIdStr = Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
             .getSubject();
+        return UUID.fromString(userIdStr);
     }
 
     public boolean validateToken(String token) {
@@ -55,6 +70,19 @@ public class JwtUtil {
             return true;
         } catch (JwtException | IllegalArgumentException e) {
             return false;
+        }
+    }
+
+    public boolean isTokenExpired(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                .setSigningKey(key)
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+            return claims.getExpiration().before(new Date());
+        } catch (Exception e) {
+            return true;
         }
     }
 }

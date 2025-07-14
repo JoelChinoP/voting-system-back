@@ -1,0 +1,39 @@
+# ========================
+# Java/Maven artifacts
+# ========================
+target/
+*.class
+*.jar
+*.war
+*.log
+
+# ========================
+# Test artifacts
+# ========================
+*.test
+*.spec
+*.tmp
+*.bak
+
+# ========================
+# IDEs and Editors
+# ========================
+.idea/
+*.iml
+.vscode/
+.project
+.classpath
+.settings/
+
+# ========================
+# Git & Build
+# ========================
+.git/
+.gitignore
+.dockerignore
+
+# ========================
+# Entorno
+# ========================
+.env
+.env.*

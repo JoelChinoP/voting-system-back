@@ -1,24 +1,20 @@
-# Etapa 1: Compilación
+# Etapa 1: build
 FROM eclipse-temurin:17-jdk AS build
+
 WORKDIR /app
 
-# Copiar archivos necesarios para construir el JAR
 COPY .mvn/ .mvn
-COPY mvnw pom.xml ./
+COPY mvnw .
+COPY pom.xml .
 COPY src ./src
 
-# Compilar usando Maven wrapper
 RUN ./mvnw clean package -DskipTests
 
-# Etapa 2: Imagen final para ejecución
+# Etapa 2: runtime
 FROM eclipse-temurin:17-jdk
+
 WORKDIR /app
 
-# Copiar el JAR desde la etapa de construcción
-COPY --from=build /app/target/auth-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/auth-service-0.0.1-SNAPSHOT.jar app.jar
 
-# Puerto expuesto (opcional)
-EXPOSE 8080
-
-# Comando de arranque
 ENTRYPOINT ["java", "-jar", "app.jar"]

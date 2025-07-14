@@ -1,14 +1,24 @@
-# Etapa final: imagen ligera con Java 17
-FROM eclipse-temurin:17-jdk
-
-# Carpeta de trabajo dentro del contenedor
+# Etapa 1: Compilación
+FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
-# Copiar el .jar generado por Maven local
-COPY target/auth-0.0.1-SNAPSHOT.jar app.jar
+# Copiar archivos necesarios para construir el JAR
+COPY .mvn/ .mvn
+COPY mvnw pom.xml ./
+COPY src ./src
 
-# Exponer el puerto por defecto de Spring Boot
+# Compilar usando Maven wrapper
+RUN ./mvnw clean package -DskipTests
+
+# Etapa 2: Imagen final para ejecución
+FROM eclipse-temurin:17-jdk
+WORKDIR /app
+
+# Copiar el JAR desde la etapa de construcción
+COPY --from=build /app/target/auth-0.0.1-SNAPSHOT.jar app.jar
+
+# Puerto expuesto (opcional)
 EXPOSE 8080
 
-# Comando para ejecutar el servicio
+# Comando de arranque
 ENTRYPOINT ["java", "-jar", "app.jar"]

@@ -24,8 +24,8 @@ public class JwtUtil {
     }
 
     public String generateToken(UserDetails userDetails) {
-        // Obtener el userId del UserDetails (asumiendo que es un User)
-        String userId = ((com.auth.model.User) userDetails).getId().toString();
+        // Para compatibilidad con votes-service, usar el username como subject
+        String username = userDetails.getUsername();
         
         String roles = userDetails.getAuthorities()
             .stream()
@@ -33,7 +33,7 @@ public class JwtUtil {
             .collect(Collectors.joining(","));
 
         return Jwts.builder()
-            .setSubject(userId)  // userId como subject para compatibilidad con votes-service
+            .setSubject(username)  // username como subject para compatibilidad con votes-service
             .claim("username", userDetails.getUsername())
             .claim("roles", roles)
             .setIssuedAt(new Date())

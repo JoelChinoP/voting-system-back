@@ -89,7 +89,7 @@ public class AuthController {
     @SecurityRequirement(name = "bearerAuth")
     public ResponseEntity<Map<String, Object>> checkVotingStatus(
             @AuthenticationPrincipal UserDetails user,
-            @RequestParam(required = false) UUID electionId) {
+            @RequestParam(value = "electionId", required = false) UUID electionId) {
         
         User dbUser = userRepository.findByUsername(user.getUsername())
             .orElseThrow(() -> new UsernameNotFoundException("User not found: " + user.getUsername()));

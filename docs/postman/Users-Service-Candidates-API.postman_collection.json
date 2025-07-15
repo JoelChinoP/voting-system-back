@@ -1,0 +1,516 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+		"name": "Users Service - Candidates API",
+		"description": "Colección para probar todas las APIs del microservicio users-service (gestión de candidatos)",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Autenticación",
+			"item": [
+				{
+					"name": "Login Basic Auth",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/candidates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates"
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Prueba de autenticación básica para acceder a las APIs"
+					}
+				}
+			]
+		},
+		{
+			"name": "Candidatos - CRUD",
+			"item": [
+				{
+					"name": "1. Obtener todos los candidatos",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/candidates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates"
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Obtiene la lista de todos los candidatos"
+					}
+				},
+				{
+					"name": "2. Crear nuevo candidato",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Juan Carlos Pérez\",\n  \"partidoPolitico\": \"Partido Democrático\",\n  \"cargo\": \"Presidente\",\n  \"email\": \"juan.perez@democracia.pe\",\n  \"telefono\": \"+51 999 123 456\",\n  \"lugarNacimiento\": \"Lima, Perú\",\n  \"educacion\": \"Abogado por la Universidad Nacional Mayor de San Marcos, MBA en Harvard Business School\",\n  \"experiencia\": \"Ex Ministro de Economía (2015-2018), Congresista (2011-2015), Alcalde de Lima (2007-2011)\",\n  \"propuestas\": \"1. Modernización del Estado\\n2. Lucha contra la corrupción\\n3. Reactivación económica post-pandemia\\n4. Reforma educativa integral\\n5. Sistema de salud universal\",\n  \"descripcion\": \"Economista y político peruano con amplia experiencia en gestión pública. Propone un gobierno transparente y eficiente.\",\n  \"imagen\": \"https://example.com/candidates/juan-perez.jpg\",\n  \"sitioWeb\": \"https://juan-perez-presidente.pe\",\n  \"color\": \"#1E40AF\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/candidates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates"
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Crea un nuevo candidato con todos los campos"
+					}
+				},
+				{
+					"name": "3. Crear segundo candidato",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"María Elena Rodríguez\",\n  \"partidoPolitico\": \"Alianza Popular\",\n  \"cargo\": \"Presidente\",\n  \"email\": \"maria.rodriguez@alianzapopular.pe\",\n  \"telefono\": \"+51 999 654 321\",\n  \"lugarNacimiento\": \"Arequipa, Perú\",\n  \"educacion\": \"Médica Cirujana por la Universidad Cayetano Heredia, Maestría en Salud Pública por Johns Hopkins\",\n  \"experiencia\": \"Ministra de Salud (2016-2020), Directora del Hospital Nacional (2012-2016), Médica especialista en epidemiología\",\n  \"propuestas\": \"1. Sistema de salud universal gratuito\\n2. Inversión en investigación médica\\n3. Prevención de enfermedades\\n4. Telemedicina para zonas rurales\\n5. Modernización hospitalaria\",\n  \"descripcion\": \"Médica especialista en salud pública con experiencia en gestión sanitaria a nivel nacional.\",\n  \"imagen\": \"https://example.com/candidates/maria-rodriguez.jpg\",\n  \"sitioWeb\": \"https://maria-rodriguez-salud.pe\",\n  \"color\": \"#DC2626\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/candidates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates"
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Crea un segundo candidato para tener datos de prueba"
+					}
+				},
+				{
+					"name": "4. Obtener candidato por ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/candidates/{{candidate_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates",
+								"{{candidate_id}}"
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Obtiene un candidato específico por su ID"
+					}
+				},
+				{
+					"name": "5. Actualizar candidato",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nombre\": \"Juan Carlos Pérez Actualizado\",\n  \"partidoPolitico\": \"Partido Democrático Renovado\",\n  \"cargo\": \"Presidente\",\n  \"email\": \"juan.perez.nuevo@democracia.pe\",\n  \"telefono\": \"+51 999 123 999\",\n  \"lugarNacimiento\": \"Lima, Perú\",\n  \"educacion\": \"Abogado por la Universidad Nacional Mayor de San Marcos, MBA en Harvard Business School, Doctorado en Ciencias Políticas\",\n  \"experiencia\": \"Ex Ministro de Economía (2015-2018), Congresista (2011-2015), Alcalde de Lima (2007-2011), Consultor internacional\",\n  \"propuestas\": \"1. Modernización del Estado con IA\\n2. Lucha contra la corrupción con tecnología blockchain\\n3. Reactivación económica post-pandemia\\n4. Reforma educativa integral\\n5. Sistema de salud universal\\n6. Agenda verde y sostenibilidad\",\n  \"descripcion\": \"Economista y político peruano con amplia experiencia en gestión pública. Propone un gobierno transparente, eficiente y tecnológicamente avanzado.\",\n  \"imagen\": \"https://example.com/candidates/juan-perez-updated.jpg\",\n  \"sitioWeb\": \"https://juan-perez-2025.pe\",\n  \"color\": \"#059669\"\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/candidates/{{candidate_id}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates",
+								"{{candidate_id}}"
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Actualiza la información de un candidato existente"
+					}
+				},
+				{
+					"name": "6. Eliminar candidato",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/candidates/{{candidate_id_to_delete}}",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates",
+								"{{candidate_id_to_delete}}"
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Elimina un candidato por su ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Candidatos - Búsqueda y Filtros",
+			"item": [
+				{
+					"name": "Buscar candidatos por nombre",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/candidates/search?name=Juan",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates",
+								"search"
+							],
+							"query": [
+								{
+									"key": "name",
+									"value": "Juan"
+								}
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Busca candidatos que contengan 'Juan' en su nombre"
+					}
+				},
+				{
+					"name": "Filtrar candidatos por partido",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/candidates/filter?partido=Partido Democrático",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates",
+								"filter"
+							],
+							"query": [
+								{
+									"key": "partido",
+									"value": "Partido Democrático"
+								}
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Filtra candidatos por partido político"
+					}
+				},
+				{
+					"name": "Filtrar candidatos por cargo",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/candidates/filter?cargo=Presidente",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"candidates",
+								"filter"
+							],
+							"query": [
+								{
+									"key": "cargo",
+									"value": "Presidente"
+								}
+							]
+						},
+						"auth": {
+							"type": "basic",
+							"basic": [
+								{
+									"key": "password",
+									"value": "admin",
+									"type": "string"
+								},
+								{
+									"key": "username",
+									"value": "admin",
+									"type": "string"
+								}
+							]
+						},
+						"description": "Filtra candidatos por cargo (Presidente, Congresista, etc.)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Servicios del Sistema",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/actuator/health",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"actuator",
+								"health"
+							]
+						},
+						"description": "Verifica el estado de salud del servicio"
+					}
+				},
+				{
+					"name": "Swagger UI",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/swagger-ui/index.html",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"swagger-ui",
+								"index.html"
+							]
+						},
+						"description": "Abre la documentación interactiva de la API"
+					}
+				},
+				{
+					"name": "H2 Console",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/h2-console",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"h2-console"
+							]
+						},
+						"description": "Accede a la consola de la base de datos H2 (solo para desarrollo)"
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:8081",
+			"type": "string"
+		},
+		{
+			"key": "candidate_id",
+			"value": "1",
+			"type": "string"
+		},
+		{
+			"key": "candidate_id_to_delete",
+			"value": "2",
+			"type": "string"
+		}
+	]
+}

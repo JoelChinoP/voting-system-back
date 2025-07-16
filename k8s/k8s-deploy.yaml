@@ -3,6 +3,22 @@ kind: Namespace
 metadata:
   name: voting-system
 ---
+# ConfigMap con configuraciones compartidas
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: voting-system-config
+  namespace: voting-system
+data:
+  POSTGRES_DB: "voting_system"
+  POSTGRES_USER: "user"
+  POSTGRES_PASSWORD: "user"
+  JWT_SECRET: "mySecretKey123456789012345678901234567890"
+  JWT_EXPIRATION: "86400000"
+  DEFAULT_ELECTION_ID: "550e8400-e29b-41d4-a716-446655440000"
+  CASSANDRA_KEYSPACE: "voting_system"
+  CASSANDRA_DATACENTER: "datacenter1"
+---
 # PostgreSQL Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -24,13 +40,28 @@ spec:
           image: postgres:13
           env:
             - name: POSTGRES_DB
-              value: "voting_system"
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_DB
             - name: POSTGRES_USER
-              value: "user"
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_USER
             - name: POSTGRES_PASSWORD
-              value: "user"
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_PASSWORD
           ports:
             - containerPort: 5432
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: postgres-storage
+          emptyDir: {}
 ---
 # PostgreSQL Service
 apiVersion: v1
@@ -68,11 +99,30 @@ spec:
             - name: CASSANDRA_CLUSTER_NAME
               value: "voting-cluster"
             - name: CASSANDRA_DC
-              value: "datacenter1"
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: CASSANDRA_DATACENTER
             - name: CASSANDRA_RACK
               value: "rack1"
+            - name: CASSANDRA_ENDPOINT_SNITCH
+              value: "GossipingPropertyFileSnitch"
           ports:
             - containerPort: 9042
+          volumeMounts:
+            - name: cassandra-storage
+              mountPath: /var/lib/cassandra
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - "nodetool status"
+            initialDelaySeconds: 120
+            periodSeconds: 30
+      volumes:
+        - name: cassandra-storage
+          emptyDir: {}
 ---
 # Cassandra Service
 apiVersion: v1
@@ -109,10 +159,66 @@ spec:
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres-service:5432/voting_system"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_PASSWORD
             - name: SPRING_CASSANDRA_CONTACT_POINTS
               value: "cassandra-service"
+            - name: SPRING_CASSANDRA_PORT
+              value: "9042"
+            - name: SPRING_CASSANDRA_KEYSPACE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: CASSANDRA_KEYSPACE
+            - name: SPRING_CASSANDRA_LOCAL_DATACENTER
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: CASSANDRA_DATACENTER
+            - name: JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_SECRET
+            - name: JWT_EXPIRATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: JWT_EXPIRATION
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: APP_DEFAULT_ELECTION_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: DEFAULT_ELECTION_ID
+            - name: SERVER_PORT
+              value: "8081"
           ports:
             - containerPort: 8081
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8081
+            initialDelaySeconds: 90
+            periodSeconds: 30
 ---
 # Auth Service Service
 apiVersion: v1
@@ -151,8 +257,47 @@ spec:
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres-service:5432/voting_system"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_SECRET
+            - name: JWT_EXPIRATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: JWT_EXPIRATION
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: SERVER_PORT
+              value: "8082"
           ports:
             - containerPort: 8082
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8082
+            initialDelaySeconds: 90
+            periodSeconds: 30
 ---
 # Users Service Service
 apiVersion: v1
@@ -191,10 +336,66 @@ spec:
           env:
             - name: SPRING_DATASOURCE_URL
               value: "jdbc:postgresql://postgres-service:5432/voting_system"
+            - name: SPRING_DATASOURCE_USERNAME
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_USER
+            - name: SPRING_DATASOURCE_PASSWORD
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: POSTGRES_PASSWORD
             - name: SPRING_CASSANDRA_CONTACT_POINTS
               value: "cassandra-service"
+            - name: SPRING_CASSANDRA_PORT
+              value: "9042"
+            - name: SPRING_CASSANDRA_KEYSPACE_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: CASSANDRA_KEYSPACE
+            - name: SPRING_CASSANDRA_LOCAL_DATACENTER
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: CASSANDRA_DATACENTER
+            - name: JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_SECRET
+            - name: JWT_EXPIRATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: JWT_EXPIRATION
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: APP_DEFAULT_ELECTION_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: DEFAULT_ELECTION_ID
+            - name: SERVER_PORT
+              value: "8083"
           ports:
             - containerPort: 8083
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8083
+            initialDelaySeconds: 90
+            periodSeconds: 30
 ---
 # Votes Service Service
 apiVersion: v1
@@ -237,8 +438,37 @@ spec:
               value: "http://users-service:8082"
             - name: AUTH_SERVICE_URL
               value: "http://auth-service:8081"
+            - name: JWT_SECRET
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_SECRET
+            - name: JWT_EXPIRATION_MS
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: JWT_EXPIRATION
+              valueFrom:
+                configMapKeyRef:
+                  name: voting-system-config
+                  key: JWT_EXPIRATION
+            - name: SERVER_PORT
+              value: "8084"
           ports:
             - containerPort: 8084
+          readinessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 60
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /actuator/health
+              port: 8084
+            initialDelaySeconds: 90
+            periodSeconds: 30
 ---
 # Reports Service Service
 apiVersion: v1
@@ -263,7 +493,7 @@ metadata:
   namespace: voting-system
 spec:
   selector:
-    app: auth-service # Puedes cambiar esto según el servicio principal
+    app: auth-service
   ports:
     - port: 8080
       targetPort: 8081

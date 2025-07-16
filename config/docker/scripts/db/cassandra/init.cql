@@ -1,11 +1,11 @@
 -- Crear keyspace para el sistema de votación
-CREATE KEYSPACE IF NOT EXISTS voting_system
+CREATE KEYSPACE IF NOT EXISTS voting_keyspace
 WITH REPLICATION = {
   'class': 'SimpleStrategy',
   'replication_factor': 1
 };
 
-USE voting_system;
+USE voting_keyspace;
 
 -- Tabla principal para almacenar votos (anónimos)
 CREATE TABLE IF NOT EXISTS votes (

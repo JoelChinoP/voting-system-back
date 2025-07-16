@@ -1,15 +1,26 @@
 FROM openjdk:17-jdk-slim
 
+LABEL maintainer="Tu Nombre/Equipo <tu_email@ejemplo.com>"
+LABEL description="Microservicio de Votos (Votes Service)"
+LABEL version="1.0.0"
+
+RUN groupadd -r votes && useradd -r -g votes votes
+
 WORKDIR /app
 
-# Copiar el JAR específico por nombre
 COPY target/votes-0.0.1-SNAPSHOT.jar app.jar
 
-# Verificar que el JAR existe
-RUN ls -la app.jar
+RUN chown votes:votes app.jar
 
-# Exponer el puerto
+USER votes
+
 EXPOSE 8083
 
-# Comando para ejecutar la aplicación
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENV JAVA_OPTS="-Xmx512m -Xms256m"
+ENV SPRING_PROFILES_ACTIVE="prod"
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:8083/actuator/health || exit 1
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]
+

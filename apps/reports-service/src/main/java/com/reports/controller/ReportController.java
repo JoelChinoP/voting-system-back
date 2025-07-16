@@ -23,6 +23,12 @@ import java.util.List;
  * Este controlador expone los endpoints para consultar diferentes tipos
  * de reportes relacionados con los resultados de las votaciones.
  */
+@CrossOrigin(
+        origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:4173"},
+        allowedHeaders = "*",
+        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
+        allowCredentials = "true"
+)
 @RestController
 @RequestMapping("/api/v1/reports")
 @Tag(name = "Reports", description = "API para la gestión de reportes de votación")

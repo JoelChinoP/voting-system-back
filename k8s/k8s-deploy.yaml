@@ -1,0 +1,271 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: voting-system
+---
+# PostgreSQL Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: voting-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:13
+          env:
+            - name: POSTGRES_DB
+              value: "voting_system"
+            - name: POSTGRES_USER
+              value: "user"
+            - name: POSTGRES_PASSWORD
+              value: "user"
+          ports:
+            - containerPort: 5432
+---
+# PostgreSQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres-service
+  namespace: voting-system
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+# Cassandra Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cassandra
+  namespace: voting-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+        - name: cassandra
+          image: cassandra:3.11
+          env:
+            - name: CASSANDRA_CLUSTER_NAME
+              value: "voting-cluster"
+            - name: CASSANDRA_DC
+              value: "datacenter1"
+            - name: CASSANDRA_RACK
+              value: "rack1"
+          ports:
+            - containerPort: 9042
+---
+# Cassandra Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: cassandra-service
+  namespace: voting-system
+spec:
+  selector:
+    app: cassandra
+  ports:
+    - port: 9042
+      targetPort: 9042
+---
+# Auth Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: voting-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+        - name: auth-service
+          image: localhost:32000/auth-service:latest
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:5432/voting_system"
+            - name: SPRING_CASSANDRA_CONTACT_POINTS
+              value: "cassandra-service"
+          ports:
+            - containerPort: 8081
+---
+# Auth Service Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: voting-system
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - port: 8081
+      targetPort: 8081
+      nodePort: 30081
+  type: NodePort
+---
+# Users Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: users-service
+  namespace: voting-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users-service
+  template:
+    metadata:
+      labels:
+        app: users-service
+    spec:
+      containers:
+        - name: users-service
+          image: localhost:32000/users-service:latest
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:5432/voting_system"
+          ports:
+            - containerPort: 8082
+---
+# Users Service Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: users-service
+  namespace: voting-system
+spec:
+  selector:
+    app: users-service
+  ports:
+    - port: 8082
+      targetPort: 8082
+      nodePort: 30082
+  type: NodePort
+---
+# Votes Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: votes-service
+  namespace: voting-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: votes-service
+  template:
+    metadata:
+      labels:
+        app: votes-service
+    spec:
+      containers:
+        - name: votes-service
+          image: localhost:32000/votes-service:latest
+          env:
+            - name: SPRING_DATASOURCE_URL
+              value: "jdbc:postgresql://postgres-service:5432/voting_system"
+            - name: SPRING_CASSANDRA_CONTACT_POINTS
+              value: "cassandra-service"
+          ports:
+            - containerPort: 8083
+---
+# Votes Service Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: votes-service
+  namespace: voting-system
+spec:
+  selector:
+    app: votes-service
+  ports:
+    - port: 8083
+      targetPort: 8083
+      nodePort: 30083
+  type: NodePort
+---
+# Reports Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reports-service
+  namespace: voting-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: reports-service
+  template:
+    metadata:
+      labels:
+        app: reports-service
+    spec:
+      containers:
+        - name: reports-service
+          image: localhost:32000/reports-service:latest
+          env:
+            - name: VOTES_SERVICE_URL
+              value: "http://votes-service:8083"
+            - name: USERS_SERVICE_URL
+              value: "http://users-service:8082"
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service:8081"
+          ports:
+            - containerPort: 8084
+---
+# Reports Service Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: reports-service
+  namespace: voting-system
+spec:
+  selector:
+    app: reports-service
+  ports:
+    - port: 8084
+      targetPort: 8084
+      nodePort: 30084
+  type: NodePort
+---
+# Load Balancer Service para acceso externo en puerto 8080
+apiVersion: v1
+kind: Service
+metadata:
+  name: voting-system-lb
+  namespace: voting-system
+spec:
+  selector:
+    app: auth-service # Puedes cambiar esto según el servicio principal
+  ports:
+    - port: 8080
+      targetPort: 8081
+      nodePort: 30080
+  type: NodePort

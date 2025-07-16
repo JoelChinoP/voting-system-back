@@ -14,7 +14,7 @@ RUN chown auth:auth app.jar
 
 USER auth
 
-EXPOSE 8080
+EXPOSE 8081
 
 ENV JAVA_OPTS="-Xmx512m -Xms256m"
 ENV SPRING_PROFILES_ACTIVE="prod"

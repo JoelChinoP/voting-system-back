@@ -1,8 +1,8 @@
-FROM openjdk:17-jdk-slim
+FROM oeclipse-temurin:17-jre-alpine
 
 WORKDIR /app
 
-COPY target/users-0.0.1-SNAPSHOT.jar app.jar
+COPY target/reports-0.0.1-SNAPSHOT.jar app.jar
 
 EXPOSE 8082
 

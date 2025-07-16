@@ -21,12 +21,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(
-        origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:4173"},
-        allowedHeaders = "*",
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
-        allowCredentials = "true"
-)
 @RestController
 @RequestMapping("/api/v1/candidates")
 @Tag(name = "Candidates", description = "Candidate management endpoints")
@@ -41,7 +35,7 @@ public class CandidateController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @Operation(
         summary = "Crear nuevo candidato",
         description = "Crea un nuevo candidato en el sistema. Solo accesible para administradores."
@@ -217,7 +211,7 @@ public class CandidateController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
     @Operation(
         summary = "Actualizar candidato",
         description = "Actualiza los datos de un candidato existente. Solo accesible para administradores."

@@ -25,12 +25,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 import java.util.UUID;
 
-@CrossOrigin(
-        origins = {"http://localhost:3000", "http://localhost:5173", "http://localhost:4173"},
-        allowedHeaders = "*",
-        methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
-        allowCredentials = "true"
-)
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor

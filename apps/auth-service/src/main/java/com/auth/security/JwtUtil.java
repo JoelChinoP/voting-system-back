@@ -1,5 +1,6 @@
 package com.auth.security;
 
+import com.auth.service.TokenBlacklistService;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,10 +18,12 @@ public class JwtUtil {
 
     private final Key key;
     private final long jwtExpirationMs;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtUtil(@Value("${jwt.secret}") String jwtSecret, @Value("${jwt.expiration-ms}") long jwtExpirationMs) {
+    public JwtUtil(@Value("${jwt.secret}") String jwtSecret, @Value("${jwt.expiration-ms}") long jwtExpirationMs, TokenBlacklistService tokenBlacklistService) {
         this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         this.jwtExpirationMs = jwtExpirationMs;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -61,6 +64,15 @@ public class JwtUtil {
         return UUID.fromString(userIdStr);
     }
 
+    public String extractJti(String token) {
+        return Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
+            .getId();
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parserBuilder()
@@ -84,5 +96,16 @@ public class JwtUtil {
         } catch (Exception e) {
             return true;
         }
+    }
+
+    public void invalidateToken(String token) {
+        String jti = extractJti(token);
+        Date expiryDate = Jwts.parserBuilder()
+            .setSigningKey(key)
+            .build()
+            .parseClaimsJws(token)
+            .getBody()
+            .getExpiration();
+        tokenBlacklistService.invalidateToken(jti, expiryDate);
     }
 }

@@ -2,6 +2,7 @@ package com.auth.security.filter;
 
 import com.auth.security.JwtUtil;
 import com.auth.security.UserDetailsServiceImpl;
+import com.auth.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -22,11 +23,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserDetailsServiceImpl userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // Constructor injection
-    public JwtAuthFilter(JwtUtil jwtUtil, UserDetailsServiceImpl userDetailsService) {
+    public JwtAuthFilter(JwtUtil jwtUtil, UserDetailsServiceImpl userDetailsService, TokenBlacklistService tokenBlacklistService) {
         this.jwtUtil = jwtUtil;
         this.userDetailsService = userDetailsService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -34,6 +37,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                                     HttpServletResponse response,
                                     FilterChain filterChain)
                                     throws ServletException, IOException {
+        if (request == null || response == null || filterChain == null) {
+            throw new IllegalArgumentException("Request, Response, or FilterChain cannot be null");
+        }
 
         final String authHeader = request.getHeader("Authorization");
         String username = null;
@@ -67,6 +73,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             } else {
                 log.warn("Token validation failed for user: {}", username);
             }
+        }
+
+        if (token != null && tokenBlacklistService.isTokenRevoked(jwtUtil.extractJti(token))) {
+            log.warn("Token is revoked: {}", token);
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
         }
 
         filterChain.doFilter(request, response);

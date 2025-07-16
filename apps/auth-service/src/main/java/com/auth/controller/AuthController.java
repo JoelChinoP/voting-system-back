@@ -38,8 +38,10 @@ public class AuthController {
     private final AuthService authService;
     private final VotingStatusService votingStatusService;
 
+    private static final String HAS_VOTED = "hasVoted";
+
     /**
-     * RF-001: Registro de usuarios
+     * RF-001: Registro de usuariossi
      */
     @PostMapping("/register")
     @Operation(summary = "Register a new user", description = "Register a new user with email and password validation")
@@ -101,7 +103,7 @@ public class AuthController {
             dbUser.getUsername(), hasVotedInCassandra);
         
         return ResponseEntity.ok(Map.of(
-            "hasVoted", hasVotedInCassandra,
+            HAS_VOTED, hasVotedInCassandra,
             "userId", dbUser.getId(),
             "eligible", !hasVotedInCassandra,
             "message", hasVotedInCassandra ? "User has already voted" : "User is eligible to vote"
@@ -110,6 +112,7 @@ public class AuthController {
 
     /**
      * Endpoint legacy para compatibilidad (deprecated)
+     * @deprecated Use /voting-status en lugar de este endpoint.
      */
     @GetMapping("/has-voted")
     @Operation(summary = "Check if user has voted (legacy)", description = "Legacy endpoint - use /voting-status instead")
@@ -123,7 +126,7 @@ public class AuthController {
         
         boolean hasVoted = votingStatusService.hasUserVoted(dbUser.getId());
         
-        return ResponseEntity.ok(Map.of("hasVoted", hasVoted));
+        return ResponseEntity.ok(Map.of(HAS_VOTED, hasVoted));
     }
 
     /**
@@ -143,9 +146,32 @@ public class AuthController {
                 "register", "POST /api/v1/auth/register",
                 "login", "POST /api/v1/auth/login", 
                 "votingStatus", "GET /api/v1/auth/voting-status (requires JWT)",
-                "hasVoted", "GET /api/v1/auth/has-voted (requires JWT, deprecated)",
+                "hasVoted", "GET /api/v1/auth/" + HAS_VOTED + " (requires JWT, deprecated)",
                 "status", "GET /api/v1/auth/status"
             )
         ));
+    }
+
+    /**
+     * RF-004: Cierre de sesión de usuarios
+     */
+    @PostMapping("/logout")
+    @Operation(summary = "Logout user", description = "Invalidate JWT token and logout user")
+    @ApiResponse(responseCode = "204", description = "Logout successful")
+    @ApiResponse(responseCode = "401", description = "Unauthorized")
+    public ResponseEntity<Void> logout(@RequestHeader("Authorization") String authorizationHeader) {
+        log.info("Logout attempt");
+
+        // Extract token from Authorization header
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            log.warn("Invalid Authorization header");
+            return ResponseEntity.status(401).build();
+        }
+
+        String token = authorizationHeader.substring(7);
+        jwtUtil.invalidateToken(token);
+
+        log.info("Logout successful");
+        return ResponseEntity.noContent().build();
     }
 }

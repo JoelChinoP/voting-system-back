@@ -59,26 +59,24 @@ services:
         echo 'Cassandra initialized successfully!'
       "
 
-  auth-service:
-    build:
-      context: ../../apps/auth-service
-      dockerfile: Dockerfile
-    container_name: auth-service
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_system
-      SPRING_DATASOURCE_USERNAME: voting_user
-      SPRING_DATASOURCE_PASSWORD: dev_password
+  # Redis - Para soporte de caché y otras funcionalidades
+  redis:
+    image: redis:7-alpine
+    container_name: voting-redis
     ports:
-      - "8080:8080"
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:
   cassandra_data:
+  redis_data:
 
 networks:
   default:

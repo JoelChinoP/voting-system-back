@@ -33,6 +33,13 @@ CREATE TABLE IF NOT EXISTS candidates (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabla para almacenar tokens revocados
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    token VARCHAR(512) NOT NULL,
+    revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices para optimizar consultas
 CREATE INDEX IF NOT EXISTS idx_user_voting_status_election ON user_voting_status(election_id);
 CREATE INDEX IF NOT EXISTS idx_user_voting_status_voted ON user_voting_status(has_voted);

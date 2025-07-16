@@ -14,26 +14,19 @@ public class CorsConfig {
     @Bean
     public CorsWebFilter corsWebFilter() {
         CorsConfiguration corsConfig = new CorsConfiguration();
-        
-        // Orígenes permitidos (tu frontend)
-        corsConfig.setAllowedOrigins(Arrays.asList(
-            "http://localhost:3000",
-            "http://localhost:5173", 
-            "http://localhost:4173"
+
+        // Permite patrones de origen (mejor para varios)
+        corsConfig.setAllowedOriginPatterns(Arrays.asList(
+                "http://localhost:3000",
+                "http://localhost:5173",
+                "http://localhost:4173"
         ));
-        
-        // Métodos HTTP permitidos
+
         corsConfig.setAllowedMethods(Arrays.asList(
-            "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
+                "GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"
         ));
-        
-        // Headers permitidos
         corsConfig.setAllowedHeaders(Arrays.asList("*"));
-        
-        // Permitir credenciales
         corsConfig.setAllowCredentials(true);
-        
-        // Tiempo de caché para preflight
         corsConfig.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

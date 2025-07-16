@@ -108,7 +108,7 @@ class ReportControllerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.success").value(false))
-                .andExpected(jsonPath("$.message").value("Error al obtener datos"))
+                .andExpect(jsonPath("$.message").value("Error al obtener datos"))
                 .andExpect(jsonPath("$.errorCode").value("VOTES_SERVICE_ERROR"))
                 .andExpect(jsonPath("$.timestamp").exists());
 

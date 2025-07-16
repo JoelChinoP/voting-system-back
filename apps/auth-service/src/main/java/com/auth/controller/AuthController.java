@@ -111,25 +111,6 @@ public class AuthController {
     }
 
     /**
-     * Endpoint legacy para compatibilidad (deprecated)
-     * @deprecated Use /voting-status en lugar de este endpoint.
-     */
-    @GetMapping("/has-voted")
-    @Operation(summary = "Check if user has voted (legacy)", description = "Legacy endpoint - use /voting-status instead")
-    @ApiResponse(responseCode = "200", description = "Voting status retrieved")
-    @ApiResponse(responseCode = "401", description = "Unauthorized")
-    @SecurityRequirement(name = "bearerAuth")
-    @Deprecated
-    public ResponseEntity<Map<String, Boolean>> hasVoted(@AuthenticationPrincipal UserDetails user) {
-        User dbUser = userRepository.findByUsername(user.getUsername())
-            .orElseThrow(() -> new UsernameNotFoundException("User not found: " + user.getUsername()));
-        
-        boolean hasVoted = votingStatusService.hasUserVoted(dbUser.getId());
-        
-        return ResponseEntity.ok(Map.of(HAS_VOTED, hasVoted));
-    }
-
-    /**
      * Health check endpoint
      */
     @GetMapping("/status")
@@ -146,7 +127,6 @@ public class AuthController {
                 "register", "POST /api/v1/auth/register",
                 "login", "POST /api/v1/auth/login", 
                 "votingStatus", "GET /api/v1/auth/voting-status (requires JWT)",
-                "hasVoted", "GET /api/v1/auth/" + HAS_VOTED + " (requires JWT, deprecated)",
                 "status", "GET /api/v1/auth/status"
             )
         ));

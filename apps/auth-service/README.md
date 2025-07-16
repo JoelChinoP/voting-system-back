@@ -105,7 +105,7 @@ http://localhost:8081/api/v1/auth
 
 #### Registro de Usuario
 ```http
-POST /register
+POST /api/v1/auth/register
 Content-Type: application/json
 
 {
@@ -125,7 +125,7 @@ Content-Type: application/json
 
 #### Autenticación de Usuario
 ```http
-POST /login
+POST /api/v1/auth/login
 Content-Type: application/json
 
 {
@@ -143,7 +143,7 @@ Content-Type: application/json
 
 #### Estado del Servicio
 ```http
-GET /status
+GET /api/v1/auth/status
 ```
 
 **Respuesta (200 OK):**
@@ -158,7 +158,6 @@ GET /status
     "register": "POST /api/v1/auth/register",
     "login": "POST /api/v1/auth/login",
     "votingStatus": "GET /api/v1/auth/voting-status (requiere JWT)",
-    "hasVoted": "GET /api/v1/auth/has-voted (requiere JWT, deprecado)",
     "status": "GET /api/v1/auth/status"
   }
 }
@@ -168,7 +167,7 @@ GET /status
 
 #### Verificación de Estado de Votación
 ```http
-GET /voting-status?electionId=550e8400-e29b-41d4-a716-446655440000
+GET /api/v1/auth/voting-status?electionId=550e8400-e29b-41d4-a716-446655440000
 Authorization: Bearer <jwt-token>
 ```
 
@@ -179,19 +178,6 @@ Authorization: Bearer <jwt-token>
   "userId": "123e4567-e89b-12d3-a456-426614174000",
   "eligible": true,
   "message": "El usuario es elegible para votar"
-}
-```
-
-#### Verificación de Voto Heredado (Deprecado)
-```http
-GET /has-voted
-Authorization: Bearer <jwt-token>
-```
-
-**Respuesta (200 OK):**
-```json
-{
-  "hasVoted": false
 }
 ```
 

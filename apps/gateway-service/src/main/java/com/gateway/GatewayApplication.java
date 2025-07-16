@@ -17,24 +17,20 @@ public class GatewayApplication {
     public RouteLocator customRouteLocator(RouteLocatorBuilder builder) {
         return builder.routes()
                 // Auth Service - Puerto 8081
-                .route("auth-service", r -> r.path("/**")
-                        .uri("http://localhost:8081"))
+                .route("auth-service", r -> r.path("/api/auth/**")
+                        .uri("http://localhost:8081/api/v1/auth"))
                 
                 // Users Service - Puerto 8082
-                .route("users-service", r -> r.path("/**")
-                        .uri("http://localhost:8082"))
-                
-                // Candidates API in Users Service
-                .route("candidates-service", r -> r.path("/**")
-                        .uri("http://localhost:8082"))
+                .route("users-service", r -> r.path("/api/candidates/**")
+                        .uri("http://localhost:8082/api/v1/candidates"))
                 
                 // Votes Service - Puerto 8083
-                .route("votes-service", r -> r.path("/**")
-                        .uri("http://localhost:8083"))
+                .route("votes-service", r -> r.path("/api/votes/**")
+                        .uri("http://localhost:8083/api/v1/votes"))
                 
                 // Reports Service - Puerto 8084
-                .route("reports-service", r -> r.path("/**")
-                        .uri("http://localhost:8084"))
+                .route("reports-service", r -> r.path("/api/reports/**")
+                        .uri("http://localhost:8084/api/v1/reports"))
                 
                 // Health checks para cada servicio
                 .route("auth-health", r -> r.path("/health/auth")

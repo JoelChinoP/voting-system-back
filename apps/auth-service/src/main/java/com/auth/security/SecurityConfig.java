@@ -34,7 +34,7 @@ public class SecurityConfig {
             // Comunicaciones seguras, sin CSRF en API REST
             .csrf(AbstractHttpConfigurer::disable)
             // Configuración de CORS
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/v1/auth/register", 

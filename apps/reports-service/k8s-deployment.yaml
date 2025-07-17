@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reports-service
+  namespace: voting-system
+  labels:
+    app: reports-service
+    version: v1
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: reports-service
+  template:
+    metadata:
+      labels:
+        app: reports-service
+        version: v1
+    spec:
+      containers:
+      - name: reports-service
+        image: reports-service:1.0.0
+        ports:
+        - containerPort: 8084
+          name: http
+        env:
+        - name: SPRING_PROFILES_ACTIVE
+          value: "prod"
+        - name: VOTES_SERVICE_URL
+          value: "http://votes-service:8083"
+        - name: USERS_SERVICE_URL
+          value: "http://users-service:8082"
+        - name: AUTH_SERVICE_URL
+          value: "http://auth-service:8081"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: jwt-secret
+              key: secret
+        - name: JWT_EXPIRATION
+          value: "86400000"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8084
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        volumeMounts:
+        - name: config-volume
+          mountPath: /app/config
+          readOnly: true
+      volumes:
+      - name: config-volume
+        configMap:
+          name: reports-service-config
+      restartPolicy: Always
+      imagePullPolicy: IfNotPresent
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reports-service
+  namespace: voting-system
+  labels:
+    app: reports-service
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8084
+    targetPort: 8084
+    protocol: TCP
+    name: http
+  selector:
+    app: reports-service
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reports-service-config
+  namespace: voting-system
+data:
+  application-prod.properties: |
+    # Configuración de producción para reports-service
+    server.port=8084
+    
+    # Configuración de logging
+    logging.level.com.reports=INFO
+    logging.level.org.springframework.security=WARN
+    logging.pattern.console=%d{yyyy-MM-dd HH:mm:ss} - %msg%n
+    
+    # Configuración de Actuator
+    management.endpoints.web.exposure.include=health,info,metrics
+    management.endpoint.health.show-details=when-authorized
+    
+    # Configuración de timeout
+    http.client.connection-timeout=5000
+    http.client.read-timeout=10000
+    
+    # Configuración de retry
+    retry.max-attempts=3
+    retry.delay=1000
+    retry.multiplier=2.0
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jwt-secret
+  namespace: voting-system
+type: Opaque
+data:
+  # Base64 encoded JWT secret (cambiar en producción)
+  secret: bXlTZWNyZXRLZXk=
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: reports-service-ingress
+  namespace: voting-system
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  tls:
+  - hosts:
+    - reports.voting-system.com
+    secretName: reports-service-tls
+  rules:
+  - host: reports.voting-system.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: reports-service
+            port:
+              number: 8084
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: reports-service-hpa
+  namespace: voting-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: reports-service
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+

@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   # PostgreSQL - Para estado de usuarios
@@ -73,12 +72,92 @@ services:
       timeout: 5s
       retries: 5
 
+    # reports-service
+  reports-service:
+    build:
+      context: ../../apps/reports-service 
+      dockerfile: Dockerfile
+    container_name: reports-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      VOTES_SERVICE_URL: http://votes-service:8083 
+      USERS_SERVICE_URL: http://users-service:8082 
+      AUTH_SERVICE_URL: http://auth-service:8081 
+      JWT_SECRET: ${JWT_SECRET} 
+      JWT_EXPIRATION: ${JWT_EXPIRATION_MS} 
+    networks:
+      - voting-network 
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      votes-service:
+        condition: service_healthy
+      users-service:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # users-service y votes-service 
+  
+  users-service:
+    build:
+      context: ../../apps/users-service
+      dockerfile: Dockerfile
+    container_name: users-service
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_system
+      SPRING_DATASOURCE_USERNAME: voting_user
+      SPRING_DATASOURCE_PASSWORD: dev_password
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+    ports:
+      - "8082:8082"
+    networks:
+      - voting-network
+
+  votes-service:
+    build:
+      context: ../../apps/votes-service
+      dockerfile: Dockerfile
+    container_name: votes-service
+    depends_on:
+      cassandra:
+        condition: service_healthy
+      cassandra-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy # Si votes-service también usa PostgreSQL
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_system
+      SPRING_DATASOURCE_USERNAME: voting_user
+      SPRING_DATASOURCE_PASSWORD: dev_password
+      CASSANDRA_CONTACT_POINTS: cassandra
+      CASSANDRA_PORT: 9042
+      CASSANDRA_KEYSPACE: voting_keyspace
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+    ports:
+      - "8083:8083"
+    networks:
+      - voting-network
+
 volumes:
   postgres_data:
   cassandra_data:
   redis_data:
 
 networks:
-  default:
+  voting-network:
     name: voting-network
+    driver: bridge
 

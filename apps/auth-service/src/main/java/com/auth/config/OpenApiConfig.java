@@ -10,6 +10,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
+        /**
+         * Configures OpenAPI documentation for the Auth Service.
+         *
+         * @return OpenAPI instance with security and info details.
+         */
     @Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
@@ -21,7 +26,7 @@ public class OpenApiConfig {
                                         .bearerFormat("JWT")))
                 .info(new Info()
                         .title("Auth Service API")
-                        .description("API for user authentication and authorization in the voting system")
+                        .description("API for user authentication, authorization and voting status management")
                         .version("1.0.0"));
-    }
+        }
 }

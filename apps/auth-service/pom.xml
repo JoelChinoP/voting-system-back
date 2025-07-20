@@ -119,6 +119,18 @@
 			<version>2.0.0</version>
 		</dependency>
 
+		<!-- Redis para blacklist de tokens -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+
+		<!-- Scheduler support -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context-support</artifactId>
+		</dependency>
+
 	</dependencies>
 
 	<build>

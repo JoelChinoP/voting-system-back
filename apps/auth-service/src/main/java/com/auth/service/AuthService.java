@@ -3,6 +3,9 @@ package com.auth.service;
 import com.auth.dto.RegisterRequest;
 import com.auth.model.User;
 import com.auth.repository.UserRepository;
+
+import java.time.LocalDateTime;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,7 +18,7 @@ public class AuthService {
 
     // Constructor único: Spring lo inyecta automáticamente, no necesita @Autowired
     public AuthService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -24,15 +27,22 @@ public class AuthService {
      * RF-001: Registro de nuevos usuarios.
      * Lanza DataIntegrityViolationException si ya existe username.
      */
-    public void register(RegisterRequest req) {
-        if (userRepository.findByUsername(req.getUsername()).isPresent()) {
+    public User register(RegisterRequest request) {
+        // Verificar si el usuario ya existe
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             throw new DataIntegrityViolationException("El email ya está registrado");
         }
-        User u = new User();
-        u.setUsername(req.getUsername());
-        u.setEmail(req.getUsername()); // El username es el email
-        u.setFullName(req.getFullName());
-        u.setPassword(passwordEncoder.encode(req.getPassword()));
-        userRepository.save(u);
+
+        // Crear nuevo usuario
+        User user = User.builder()
+                .username(request.getUsername())
+                .fullName(request.getFullName())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .roles("USER")
+                .createdAt(LocalDateTime.now())
+                .build();
+
+        // Guardar y devolver el usuario
+        return userRepository.save(user);
     }
 }

@@ -37,7 +37,7 @@ class AuthServiceTest {
     void setUp() {
         registerRequest = new RegisterRequest();
         registerRequest.setFullName("Juan Pérez");
-        registerRequest.setUsername("juan@example.com");
+        registerRequest.setEmail("juan@example.com");
         registerRequest.setPassword("Password123");
     }
 

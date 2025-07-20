@@ -22,11 +22,13 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.AuthenticationException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-// Nuevos imports
 import com.auth.service.RefreshTokenService;
 import com.auth.service.TokenBlacklistService;
 import com.auth.model.RefreshToken;
@@ -72,7 +74,8 @@ public class AuthController {
         @ApiResponse(responseCode = "400", description = "Invalid request data")
         @ApiResponse(responseCode = "409", description = "Email already exists")
         public ResponseEntity<Map<String, Object>> register(@Valid @RequestBody RegisterRequest req) {
-                log.info("Registering new user: {}", req.getUsername());
+                // CAMBIO: Usar email en lugar de username en el log
+                log.info("Registering new user: {}", req.getEmail());
 
                 User newUser = authService.register(req);
 
@@ -89,7 +92,8 @@ public class AuthController {
                                 "role", newUser.getRoles() != null ? newUser.getRoles() : "USER",
                                 "hasVoted", hasVoted);
 
-                log.info("User registered successfully: {}", req.getUsername());
+                // CAMBIO: Usar email en el log de éxito
+                log.info("User registered successfully: {}", req.getEmail());
                 return ResponseEntity.status(201).body(Map.of(
                                 "message", "Usuario registrado exitosamente",
                                 "user", Map.of(
@@ -109,7 +113,7 @@ public class AuthController {
         }
 
         /**
-         * RF-002: Autenticación de usuarios (MODIFICADO para incluir Refresh Token)
+         * RF-002: Autenticación de usuarios
          */
         @PostMapping("/login")
         @Operation(summary = "Authenticate user", description = "Login with email and password to get JWT token and refresh token")
@@ -119,35 +123,51 @@ public class AuthController {
                         @Valid @RequestBody LoginRequest request,
                         HttpServletRequest httpRequest) {
 
-                log.info("Login attempt for user: {} | ip: {}", request.getUsername(), getClientIp(httpRequest));
+                log.info("Login attempt for user: {} | ip: {}", request.getEmail(), getClientIp(httpRequest));
 
-                Authentication auth = authenticationManager.authenticate(
-                                new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
+                try {
+                        Authentication auth = authenticationManager.authenticate(
+                                        new UsernamePasswordAuthenticationToken(request.getEmail(),
+                                                        request.getPassword()));
 
-                UserDetails userDetails = (UserDetails) auth.getPrincipal();
-                User user = (User) userDetails;
+                        // 1) Coger el UserDetails que construyó Spring
+                        UserDetails userDetails = (UserDetails) auth.getPrincipal();
+                        String email = userDetails.getUsername();
 
-                boolean hasVoted = votingStatusService.hasUserVoted(user.getId(), UUID.fromString(defaultElectionId));
-                String token = jwtUtil.generateTokenWithPayload(user, hasVoted);
+                        // 2) Recargar la entidad User completa desde la BD
+                        User user = userRepository.findByEmail(email)
+                                        .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
 
-                String deviceInfo = extractDeviceInfo(httpRequest);
-                String clientIp = getClientIp(httpRequest);
-                RefreshToken refreshToken = refreshTokenService.createRefreshToken(user, deviceInfo, clientIp);
+                        // 3) Continuar igual que antes
+                        boolean hasVoted = votingStatusService.hasUserVoted(
+                                        user.getId(), UUID.fromString(defaultElectionId));
+                        String token = jwtUtil.generateTokenWithPayload(user, hasVoted);
 
-                Map<String, Object> payload = Map.of(
-                                "userId", user.getId().toString(),
-                                "email", user.getUsername(),
-                                "role", user.getRoles() != null ? user.getRoles() : "USER",
-                                "hasVoted", hasVoted);
+                        RefreshToken refreshToken = refreshTokenService.createRefreshToken(
+                                        user, extractDeviceInfo(httpRequest), getClientIp(httpRequest));
 
-                log.info("Login successful for user: {}", request.getUsername());
-                return ResponseEntity.ok(Map.of(
-                                "token", token,
-                                "refreshToken", refreshToken.getToken(),
-                                "tokenType", "Bearer",
-                                "expiresIn", 86400,
-                                "refreshExpiresIn", refreshTokenDurationMs / 1000,
-                                "payload", payload));
+                        List<String> roles = new ArrayList<>(user.getRoles());
+                        Map<String, Object> payload = Map.of(
+                                        "userId", user.getId().toString(),
+                                        "email", user.getUsername(),
+                                        "roles", roles,
+                                        "hasVoted", hasVoted);
+
+                        log.info("Login successful for user: {}", email);
+                        return ResponseEntity.ok(Map.of(
+                                        "token", token,
+                                        "refreshToken", refreshToken.getToken(),
+                                        "tokenType", "Bearer",
+                                        "expiresIn", 86400,
+                                        "refreshExpiresIn", refreshTokenDurationMs / 1000,
+                                        "payload", payload));
+
+                } catch (AuthenticationException ex) {
+                        log.warn("Login failed for user {}: {}", request.getEmail(), ex.getMessage());
+                        return ResponseEntity.status(401).body(Map.of(
+                                        "error", "Credenciales inválidas",
+                                        "message", ex.getMessage()));
+                }
         }
 
         /**

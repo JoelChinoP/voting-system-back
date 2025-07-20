@@ -1,14 +1,10 @@
-FROM eclipse-temurin:17-jre-alpine
-
-LABEL maintainer="Tu Nombre/Equipo <tu_email@ejemplo.com>"
-LABEL description="Microservicio de Autenticación (Auth Service)"
-LABEL version="1.0.0"
-
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 WORKDIR /app
+COPY . .
+RUN mvn clean package -pl apps/auth-service -am -DskipTests
 
-COPY target/auth-0.0.1-SNAPSHOT.jar app.jar
-
+FROM eclipse-temurin:17-jdk-alpine
+WORKDIR /app
+COPY --from=builder /app/apps/auth-service/target/auth-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8081
-
-CMD ["java", "-jar", "app.jar"]
-
+ENTRYPOINT ["java", "-jar", "app.jar"]

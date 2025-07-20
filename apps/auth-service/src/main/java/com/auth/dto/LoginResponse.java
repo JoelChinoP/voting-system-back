@@ -11,7 +11,7 @@ public class LoginResponse {
 
     public LoginResponse(String token) {
         this.token = token;
-        this.expiresIn = 86400; // 24 horas en segundos
+        this.expiresIn = 86400;
     }
     
     public LoginResponse(String token, long expiresIn) {

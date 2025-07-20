@@ -1,3 +1,4 @@
+version: '3.8'
 
 services:
   # PostgreSQL - Para estado de usuarios
@@ -5,17 +6,19 @@ services:
     image: postgres:15-alpine
     container_name: voting-postgres
     environment:
-      POSTGRES_DB: voting_system
-      POSTGRES_USER: voting_user
-      POSTGRES_PASSWORD: dev_password
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/db/postgres/01-init.sql:/docker-entrypoint-initdb.d/01-init.sql
       - ./scripts/db/postgres/02-seed.sql:/docker-entrypoint-initdb.d/02-seed.sql
+    networks:
+      - voting-network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U voting_user -d voting_system"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -33,6 +36,8 @@ services:
       - "9042:9042"
     volumes:
       - cassandra_data:/var/lib/cassandra
+    networks:
+      - voting-network
     healthcheck:
       test: ["CMD-SHELL", "cqlsh -e 'describe cluster'"]
       interval: 15s
@@ -48,6 +53,8 @@ services:
         condition: service_healthy
     volumes:
       - ./scripts/db/cassandra/init.cql:/init.cql
+    networks:
+      - voting-network
     command: >
       bash -c "
         echo 'Waiting for Cassandra to be ready...'
@@ -58,57 +65,59 @@ services:
         echo 'Cassandra initialized successfully!'
       "
 
+  # Redis - Para soporte de caché y otras funcionalidades
+  redis:
+    image: redis:7-alpine
+    container_name: voting-redis
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - voting-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Auth Service - Servicio de autenticación
   auth-service:
     build:
-      context: ../../apps/auth-service
-      dockerfile: Dockerfile
+      context: ../../
+      dockerfile: apps/auth-service/Dockerfile
     container_name: auth-service
     depends_on:
       postgres:
         condition: service_healthy
+      cassandra:
+        condition: service_healthy
+      cassandra-init:
+        condition: service_completed_successfully
     environment:
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_system
-      SPRING_DATASOURCE_USERNAME: voting_user
-      SPRING_DATASOURCE_PASSWORD: dev_password
+      - SPRING_PROFILES_ACTIVE=dev
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
+      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION_MS=${JWT_EXPIRATION_MS}
+      - CASSANDRA_CONTACT_POINTS=cassandra
+      - CASSANDRA_PORT=9042
+      - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE}
+      - SERVER_PORT=8081
     ports:
-      - "8080:8080"
-
-    # reports-service
-  reports-service:
-    build:
-      context: ../../apps/reports-service 
-      dockerfile: Dockerfile
-    container_name: reports-service
-    ports:
-      - "8084:8084"
-    environment:
-      SPRING_PROFILES_ACTIVE: dev
-      VOTES_SERVICE_URL: http://votes-service:8083 
-      USERS_SERVICE_URL: http://users-service:8082 
-      AUTH_SERVICE_URL: http://auth-service:8081 
-      JWT_SECRET: ${JWT_SECRET} 
-      JWT_EXPIRATION: ${JWT_EXPIRATION_MS} 
+      - "8081:8081"
     networks:
-      - voting-network 
-    depends_on:
-      auth-service:
-        condition: service_healthy
-      votes-service:
-        condition: service_healthy
-      users-service:
-        condition: service_healthy
+      - voting-network
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/auth/status"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 60s
 
-  # users-service y votes-service 
-  
+  # Users Service
   users-service:
     build:
       context: ../../apps/users-service
@@ -117,17 +126,30 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      auth-service:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_system
-      SPRING_DATASOURCE_USERNAME: voting_user
-      SPRING_DATASOURCE_PASSWORD: dev_password
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      AUTH_SERVICE_URL: http://auth-service:8081
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      SERVER_PORT: 8082
     ports:
       - "8082:8082"
     networks:
       - voting-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
+  # Votes Service
   votes-service:
     build:
       context: ../../apps/votes-service
@@ -139,24 +161,37 @@ services:
       cassandra-init:
         condition: service_completed_successfully
       postgres:
-        condition: service_healthy # Si votes-service también usa PostgreSQL
+        condition: service_healthy
+      auth-service:
+        condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/voting_system
-      SPRING_DATASOURCE_USERNAME: voting_user
-      SPRING_DATASOURCE_PASSWORD: dev_password
-      CASSANDRA_CONTACT_POINTS: cassandra
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      CASSANDRA_CONTACT_POINTS: ${CASSANDRA_CONTACT_POINTS}
       CASSANDRA_PORT: 9042
-      CASSANDRA_KEYSPACE: voting_keyspace
+      CASSANDRA_KEYSPACE: ${CASSANDRA_KEYSPACE}
+      AUTH_SERVICE_URL: http://auth-service:8081
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS}
+      SERVER_PORT: 8083
     ports:
       - "8083:8083"
     networks:
       - voting-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
 volumes:
   postgres_data:
   cassandra_data:
+  redis_data:
 
 networks:
   voting-network:

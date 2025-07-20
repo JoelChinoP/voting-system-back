@@ -18,8 +18,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
         String errors = ex.getBindingResult().getFieldErrors().stream()
-            .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
-            .collect(Collectors.joining("; "));
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining("; "));
         return ResponseEntity
                 .badRequest()
                 .body(Map.of(ERROR_KEY, errors));
@@ -40,4 +40,13 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(Map.of(ERROR_KEY, "Credenciales inválidas"));
     }
+
+    /** 403 Forbidden – token inválido o acceso no permitido */
+    @ExceptionHandler(TokenException.class)
+    public ResponseEntity<Map<String, String>> handleToken(TokenException ex) {
+        return ResponseEntity
+                .status(HttpStatus.FORBIDDEN)
+                .body(Map.of(ERROR_KEY, ex.getMessage()));
+    }
+
 }

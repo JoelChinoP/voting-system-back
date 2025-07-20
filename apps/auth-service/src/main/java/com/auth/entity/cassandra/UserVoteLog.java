@@ -1,6 +1,7 @@
 package com.auth.entity.cassandra;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.data.cassandra.core.cql.PrimaryKeyType;
@@ -14,6 +15,7 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 @Table("user_votes_log")
 public class UserVoteLog {
     

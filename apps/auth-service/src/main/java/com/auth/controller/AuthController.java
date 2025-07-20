@@ -27,6 +27,7 @@ import org.springframework.security.core.AuthenticationException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.auth.service.RefreshTokenService;
@@ -390,15 +391,15 @@ public class AuthController {
         @ApiResponse(responseCode = "409", description = "User has already voted")
         @SecurityRequirement(name = "bearerAuth")
         public ResponseEntity<Map<String, Object>> markUserAsVoted(
-                        @AuthenticationPrincipal UserDetails user,
+                        @AuthenticationPrincipal UserDetails principal,
                         @Valid @RequestBody MarkVotedRequest request) {
 
-                User dbUser = userRepository.findByUsername(user.getUsername())
+                User dbUser = userRepository.findByUsername(principal.getUsername())
                                 .orElseThrow(() -> new UsernameNotFoundException(
-                                                "User not found: " + user.getUsername()));
+                                                "User not found: " + principal.getUsername()));
 
-                UUID electionId = request.getElectionId() != null ? request.getElectionId()
-                                : UUID.fromString(defaultElectionId);
+                UUID electionId = Optional.ofNullable(request.getElectionId())
+                                .orElse(UUID.fromString(defaultElectionId));
 
                 // Verificar si ya votó
                 boolean hasAlreadyVoted = votingStatusService.hasUserVoted(dbUser.getId(), electionId);
@@ -410,8 +411,8 @@ public class AuthController {
                 }
 
                 try {
-                        // Marcar como votado en Cassandra (esto lo haría el voting-service normalmente)
-                        // Aquí solo actualizamos el estado para generar nuevo token
+                        // *** Aquí persistes el voto en Cassandra ***
+                        votingStatusService.markUserVoted(dbUser.getId(), electionId);
 
                         // Generar nuevo token con hasVoted=true
                         String newToken = jwtUtil.generateTokenWithPayload(dbUser, true);
